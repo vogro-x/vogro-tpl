@@ -15,7 +15,7 @@ TEST(VstringTest, StringSplit) {
     auto result1 = std::vector<std::string>{"hello", "world", "!"};
     ASSERT_EQ(vstring::split(test_str1, ","), result1);
 
-    std::string test_str2 = "hello \tworld\n!\n";
+    std::string test_str2 = "hello world !  ";
     auto result2 = std::vector<std::string>{"hello", "world", "!"};
     ASSERT_EQ(vstring::split(test_str2), result2);
 }

@@ -48,7 +48,7 @@ namespace vstring {
         return result;
     }
 
-    std::string lstrip(const std::string &str, const std::string &rm) {
+    std::string lstrip(const std::string &str, const std::string &rm = "\r\t ") {
         auto beg = str.find_first_not_of(rm);
         if (beg == std::string::npos) {
             return "";
@@ -57,7 +57,7 @@ namespace vstring {
         }
     }
 
-    std::string rstrip(const std::string &str, const std::string &rm) {
+    std::string rstrip(const std::string &str, const std::string &rm = "\r\t ") {
         auto end = str.find_last_not_of(rm);
         if (end == std::string::npos) {
             return "";
@@ -66,7 +66,7 @@ namespace vstring {
         }
     }
 
-    std::string strip(const std::string &str, const std::string &rm) {
+    std::string strip(const std::string &str, const std::string &rm = "\n\t ") {
         return rstrip(lstrip(str, rm), rm);
     }
 
@@ -93,7 +93,6 @@ namespace vstring {
         }
         return result;
     }
-
 };
 
 namespace vtpl {
@@ -101,6 +100,10 @@ namespace vtpl {
     using Json = nlohmann::json;
     using Template = std::string;
     using Environment = Json;
+
+    using std::string;
+    using std::vector;
+    using std::unordered_map;
 
     using vstring::split;
     using vstring::rstrip;
@@ -111,12 +114,34 @@ namespace vtpl {
     using vstring::end_with;
     using vstring::start_with;
 
-    class Tokenizer {
-    public:
+    vector<string> ParseToTokens(Template html_tpl) {
+        std::vector<std::string> result;
+        size_t n = html_tpl.size(),  last_begin = 0;
+        unordered_map<string, string> open_close_m = { {"{{", "}}"},  {"{%", "%}"}, {"{#", "#}"} };
 
-    private:
+        for (size_t i = 0; i < n; ++i) {
+            auto open = html_tpl.substr(i, 2);
+            if (open == "{{" || open == "{%" || open == "{#") {
+                auto token = strip(html_tpl.substr(last_begin, i - last_begin));
+                if (!token.empty()) {
+                    result.push_back(token);
+                }
+                string close_str = open_close_m[open];
+                auto end = html_tpl.find(close_str, i);
+                if (end == std::string::npos) {
+//                    throw std::exception();
+                    return result;
+                } else {
+                    result.push_back(html_tpl.substr(i, end - i + 2));
+                    i = end + 1;
+                    last_begin = i + 1;
+                }
+            }
+        }
+        result.push_back(html_tpl.substr(last_begin + 1, n - last_begin));
+        return result;
+    }
 
-    };
 
     class Render {
     public:
@@ -125,8 +150,8 @@ namespace vtpl {
 
     };
 
-    void TemplateRender(std::string html_tpl, Json data) {
-
+    string TemplateRender(Template html_tpl, Json data) {
+        return "";
     }
 };
 

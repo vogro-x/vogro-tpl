@@ -41,16 +41,21 @@ int main() {
 //            "show":"True"}
 //    };
 
-    nlohmann::json data;
+    vtpl::Environment data;
     data["obj"]["title"] = "这是标题";
     data["obj"]["content"] = "这是内容";
     data["obj"]["foot"] = "这是页脚";
     data["obj"]["list"] = {"td1", "td2", "td3", "td4", "td5"};
     data["obj"]["show"] = true;
 
-    for (auto c : vtpl::ParseToTokens(html)) {
-        cout << c << "," << endl;
+//    for (auto c : vtpl::ParseToTokens(html)) {
+//        cout << c << "," << endl;
+//    }
+//
+    for (auto x : data.Get("obj.list")) {
+        cout << x << endl;
     }
+
 
     cout << vtpl::TemplateRender(html, data);
 }

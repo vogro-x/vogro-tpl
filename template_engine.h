@@ -48,7 +48,7 @@ namespace vstring {
         return result;
     }
 
-    std::string lstrip(const std::string &str, const std::string &rm = "\r\t ") {
+    inline std::string lstrip(const std::string &str, const std::string &rm = "\r\t ") {
         auto beg = str.find_first_not_of(rm);
         if (beg == std::string::npos) {
             return "";
@@ -57,7 +57,7 @@ namespace vstring {
         }
     }
 
-    std::string rstrip(const std::string &str, const std::string &rm = "\r\t ") {
+    inline std::string rstrip(const std::string &str, const std::string &rm = "\r\t ") {
         auto end = str.find_last_not_of(rm);
         if (end == std::string::npos) {
             return "";
@@ -66,15 +66,15 @@ namespace vstring {
         }
     }
 
-    std::string strip(const std::string &str, const std::string &rm = "\n\t ") {
+    inline std::string strip(const std::string &str, const std::string &rm = "\n\t ") {
         return rstrip(lstrip(str, rm), rm);
     }
 
-    bool start_with(const std::string &str, const std::string &prefix) {
+    inline bool start_with(const std::string &str, const std::string &prefix) {
         return str.size() >= prefix.size() && str.substr(0, prefix.size()) == prefix;
     }
 
-    bool end_with(const std::string &str, const std::string &suffix) {
+    inline bool end_with(const std::string &str, const std::string &suffix) {
         return str.size() >= suffix.size() && str.substr(str.size() - suffix.size(), suffix.size()) == suffix;
     }
 
@@ -122,7 +122,7 @@ namespace vtpl {
             auto open = html_tpl.substr(i, 2);
             if (open == "{{" || open == "{%" || open == "{#") {
                 auto token = strip(html_tpl.substr(last_begin, i - last_begin));
-                if (!token.empty()) {
+                if (not token.empty()) {
                     result.push_back(token);
                 }
                 string close_str = open_close_m[open];
@@ -141,9 +141,18 @@ namespace vtpl {
         return result;
     }
 
-
     class Environment: public Json {
+
     private:
+        template <typename T>
+        void SetData(const T &data, size_t index, const vector<string> &keys) {
+//            if (keys.size() - 2 == index) {
+//                (*this)[keys[index]] = data;
+//            } else {
+//                (*this)[keys[index]].SetData(data, index+1, keys);
+//            }
+        }
+
         template <typename T>
         auto GetData(const T &data, size_t index, const vector<string> &keys) {
             if (keys.size() - 1 == index) {
@@ -159,6 +168,12 @@ namespace vtpl {
             auto keys = split(key, ".");
             return GetData((*this), 0, keys);
         }
+
+        template <typename T>
+        void Set(const string &key, const T &data) {
+            auto keys = split(key, ".");
+            SetData(data, 0, keys);
+        }
     };
 
     class Template {
@@ -168,78 +183,114 @@ namespace vtpl {
 
         }
 
-        string render(Environment &data) {
-            std::vector<std::string> stk;
-            std::vector<std::string> result;
-            auto lines = ParseToLines(html_tpl_);
-            auto is_if = false, is_for = false;
-            int times = 0, match_times = 0;
+        string render(Environment &env) {
+            auto items = ParseToLines(html_tpl_);
+            return render(items, env);
+        }
 
-            for (auto item : lines) {
-                auto prefix = item.substr(0, 2);
+    private:
+        string render(vector<string> &items, Environment &env) {
+            vector<string> stk, result;
+            bool is_if = false, is_for = false;
+            size_t times = 0, match_times = 0;
 
-                if (prefix != "{{" && prefix != "{%") {
-                    if (!is_for && !is_if) {
-                        result.push_back(item);
-                    } else {
-                        stk.push_back(item);
-                    }
-                } else if (prefix == "{{") {
+            for (auto item : items) {
+                if (start_with(item, "{{")) {
                     if (not is_for and not is_if) {
-                        auto key = strip(item.substr(2, item.size()-4));
-                        result.push_back(data.Get(key));
-//                        result.push_back("{{" + key + "}}");
+                        auto key = GetTokens(item).front();
+                        result.push_back(env.Get(key));
                     } else {
                         stk.push_back(item);
                     }
-                } else if (prefix == "{%") {
-                    auto tokens = split(strip(item.substr(2, item.size()-4)));
-
+                } else if (start_with(item, "{%")) {
+                    auto tokens = GetTokens(item);
                     if (tokens.front() == "if") {
-//                        stk.push_back(item);
-                        if (!is_for) {
+                        stk.push_back(item);
+                        if (not is_for) {
                             is_if = true;
                             ++times;
                         }
                     } else if (tokens.front() == "for") {
-//                        stk.push_back(item);
-                        result.push_back("fuck it\n\n");
-
-                        if (!is_if) {
+                        stk.push_back(item);
+                        if (not is_if) {
                             is_for = true;
                             ++times;
                         }
                     }
 
                     if (tokens.front() == "endif") {
-//                        stk.push_back(item);
-                        if (!is_for) {
+                        stk.push_back(item);
+                        if (not is_for) {
                             ++match_times;
                         }
                         if (match_times == times) {
-//                            result.push_back(IfBlock(stk, context));
-//                            stk.clear();
+                            result.push_back(IfBlock(stk, env));
+                            stk.clear();
                             is_if = false, is_for = false;
                             times = 0, match_times = 0;
                         }
 
                     } else if (tokens.front() == "endfor") {
-//                        stk.push_back(item);
-                        if (!is_if) {
+                        stk.push_back(item);
+                        if (not is_if) {
                             ++match_times;
                         }
                         if (match_times == times) {
-//                            result.push_back(ForBlock(stk, context));
-//                            stk.clear();
+                            result.push_back(ForBlock(stk, env));
+                            stk.clear();
                             is_if = false, is_for = false;
                             times = 0, match_times = 0;
                         }
                     }
                 } else {
-
+                    if (not is_for and not is_if) {
+                        result.push_back(item);
+                    } else {
+                        stk.push_back(item);
+                    }
                 }
             }
             return join(result, "\n");
+        }
+
+        vector<string> GetTokens(const string &item) {
+            return split(strip(item.substr(2, item.size()-4)));
+        }
+
+        string IfBlock(vector<string> &stk, Environment &env) {
+            auto tokens = GetTokens(stk.front());
+            tokens.erase(tokens.begin());
+            stk.erase(stk.begin());
+            stk.pop_back();
+
+            if (CalculateCondition(tokens, env)) {
+                return (render(stk, env));
+            } else {
+                return (string());
+            }
+        }
+
+        string ForBlock(vector<string> &stk, Environment &env) {
+            string result;
+            auto tokens = GetTokens(stk.front());
+            stk.erase(stk.begin());
+            stk.pop_back();
+
+            if (tokens[0] != "for" or tokens[2] != "in") {
+                throw std::exception();
+            }
+
+            string iter_name = tokens[1], list_name = tokens[3];
+            for (auto it : env.Get(list_name)) {
+//                env.Set(list_name + "." + iter_name, it);
+                result += list_name + "." + iter_name;
+            }
+
+            return result;
+        }
+
+        bool CalculateCondition(const vector<string> &cond, Environment &env) {
+            return env.Get(cond.front());
         }
 
     private:

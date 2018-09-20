@@ -1,0 +1,14 @@
+{
+  "obj" : {
+    "title" : "this is title",
+    "content" : "this is content",
+    "foot1" : "this is foot1",
+    "foot2" : "this is foot2",
+    "list" : [
+      "td1", "td2", "td3"
+    ],
+
+    "show1" : true,
+    "show2" : false
+  }
+}

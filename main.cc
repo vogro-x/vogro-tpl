@@ -2,6 +2,8 @@
 // Created by xvvx on 18-9-12.
 //
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "template_engine.h"
 
@@ -25,37 +27,30 @@ int main() {
                              "            {% endfor %}\n"
                              "        </table>\n"
                              "        \n"
-                             "        {% if obj.show %}\n"
-                             "            <p> {{ obj.foot }} </p>\n"
+                             "        {% if obj.show1 %}\n"
+                             "            <p> {{ obj.foot1 }} </p>\n"
+                             "              {% if obj.show2 %}\n"
+                             "                  <p> {{ obj.foot2 }} </p>\n"
+                             "              {% endif %}"
                              "        {% endif %}        \n"
+
                              "    </div>\n"
                              "</body>\n"
                              "</html>");
 
-//    {
-//        "obj" : {
-//            "title" : "这是标题",
-//                    "content" : "这是内容",
-//                    "foot": "这是页脚",
-//                    "list":["td1","td2","td3","td5"],
-//            "show":"True"}
-//    };
 
-    vtpl::Environment data;
-    data["obj"]["title"] = "这是标题";
-    data["obj"]["content"] = "这是内容";
-    data["obj"]["foot"] = "这是页脚";
-    data["obj"]["list"] = {"td1", "td2", "td3", "td4", "td5"};
-    data["obj"]["show"] = true;
-
-//    for (auto c : vtpl::ParseToTokens(html)) {
-//        cout << c << "," << endl;
-//    }
+//    vtpl::Environment data;
+//    data["obj"]["title"] = "这是标题";
+//    data["obj"]["content"] = "这是内容";
+//    data["obj"]["foot1"] = "这是页脚1";
+//    data["obj"]["foot2"] = "这是页脚2";
+//    data["obj"]["list"] = {"td1", "td2", "td3", "td4", "td5"};
+//    data["obj"]["show1"] = true;
+//    data["obj"]["show2"] = false;
 //
-    for (auto x : data.Get("obj.list")) {
-        cout << x << endl;
-    }
 
-
-    cout << vtpl::TemplateRender(html, data);
+    ifstream in("data.json");
+    vtpl::Environment environment;
+    in >> environment;
+    cout << vtpl::TemplateRender(html, environment);
 }

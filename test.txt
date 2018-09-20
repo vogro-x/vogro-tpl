@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <meta charset='utf-8'>
+        <title> {{ obj.title }} </title>
+    </head>
+
+    <body>
+        {# Hello world #}
+        <div class="content">
+            <p> {{ obj.content }} </p>
+
+            <table>
+                {% for each in obj.list %}
+                    {% for x in each %}
+                        <p> {{ x.row }} -- {{ x.column }} </p>
+                    {% endfor %}
+                {% endfor %}
+            </table>
+
+            {% if obj.show1 %}
+                <p> {{ obj.foot1 }} </p>
+            {% endif %}
+
+            {% if obj.show2 %}
+                <p> {{ obj.foot2 }} </p>
+            {% endif %}
+        </div>
+    </body>
+</html>

@@ -5,7 +5,8 @@
     "foot1" : "this is foot1",
     "foot2" : "this is foot2",
     "list" : [
-      "td1", "td2", "td3"
+      [{"row" : 1, "column" : 1}, {"row" : 1, "column" : 2}],
+      [{"row" : 2, "column" : 1}, {"row" : 2, "column" : 2}]
     ],
 
     "show1" : true,

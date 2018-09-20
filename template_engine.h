@@ -6,12 +6,9 @@
 
 #define VOGRO_TPL_TEMPLATE_ENGINE_H
 
-#include <string.h>
-
 #include <algorithm>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "nlohmann/json.hpp"
 
@@ -145,15 +142,6 @@ namespace vtpl {
 
     private:
         template <typename T>
-        void SetData(const T &data, size_t index, const vector<string> &keys) {
-//            if (keys.size() - 2 == index) {
-//                (*this)[keys[index]] = data;
-//            } else {
-//                (*this)[keys[index]].SetData(data, index+1, keys);
-//            }
-        }
-
-        template <typename T>
         auto GetData(const T &data, size_t index, const vector<string> &keys) {
             if (keys.size() - 1 == index) {
                 return data[keys[index]];
@@ -168,19 +156,16 @@ namespace vtpl {
             auto keys = split(key, ".");
             return GetData((*this), 0, keys);
         }
-
-        template <typename T>
-        void Set(const string &key, const T &data) {
-            auto keys = split(key, ".");
-            SetData(data, 0, keys);
-        }
     };
 
     class Template {
     public:
-        Template(const string &html_tpl):
-                html_tpl_(html_tpl) {
+        Template(string &html_tpl):
+                html_tpl_(std::move(html_tpl)) {
+        }
 
+        Template(string &&html_tpl):
+                html_tpl_(html_tpl) {
         }
 
         string render(Environment &env) {
@@ -188,17 +173,19 @@ namespace vtpl {
             return render(items, env);
         }
 
-    private:
+    public:
         string render(vector<string> &items, Environment &env) {
             vector<string> stk, result;
             bool is_if = false, is_for = false;
             size_t times = 0, match_times = 0;
 
+            int i = 0;
             for (auto item : items) {
+                ++i;
                 if (start_with(item, "{{")) {
                     if (not is_for and not is_if) {
                         auto key = GetTokens(item).front();
-                        result.push_back(env.Get(key));
+                        result.push_back(JsonToString(env.Get(key)));
                     } else {
                         stk.push_back(item);
                     }
@@ -250,7 +237,7 @@ namespace vtpl {
                     }
                 }
             }
-            return join(result, "\n");
+            return join(result, " ");
         }
 
         vector<string> GetTokens(const string &item) {
@@ -281,9 +268,10 @@ namespace vtpl {
             }
 
             string iter_name = tokens[1], list_name = tokens[3];
+            auto env_copy = env;
             for (auto it : env.Get(list_name)) {
-//                env.Set(list_name + "." + iter_name, it);
-                result += list_name + "." + iter_name;
+                env_copy[iter_name] = it;
+                result += render(stk, env_copy);
             }
 
             return result;
@@ -291,6 +279,11 @@ namespace vtpl {
 
         bool CalculateCondition(const vector<string> &cond, Environment &env) {
             return env.Get(cond.front());
+        }
+
+        template <typename JsonObj>
+        string JsonToString(const JsonObj &obj) {
+            return strip(obj.dump(), "\"\n");
         }
 
     private:
